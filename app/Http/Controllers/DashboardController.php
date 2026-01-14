@@ -11,8 +11,6 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-
-        // Inisialisasi data kosong agar tidak error di Blade
         $data = [
             'allMessages' => collect(),
             'messages' => collect(),
@@ -21,21 +19,16 @@ class DashboardController extends Controller
         ];
 
         if ($user->role == 'admin') {
-            // Admin butuh daftar semua guru untuk statistik dan filter
             $data['gurus'] = User::where('role', 'guru')->get();
-            
             $query = Message::with(['sender', 'receiver']);
 
-            // FILTER: Berdasarkan Guru yang dipilih (Fitur Intip Chat)
             if ($request->filled('guru_id')) {
                 $guruId = $request->guru_id;
                 $query->where(function ($q) use ($guruId) {
-                    $q->where('sender_id', $guruId)
-                      ->orWhere('receiver_id', $guruId);
+                    $q->where('sender_id', $guruId)->orWhere('receiver_id', $guruId);
                 });
             }
 
-            // FILTER: Berdasarkan pencarian nama murid/guru
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
@@ -46,14 +39,17 @@ class DashboardController extends Controller
                     });
                 });
             }
-
             $data['allMessages'] = $query->latest()->paginate(20);
 
         } elseif ($user->role == 'guru') {
             $data['messages'] = Message::where('receiver_id', $user->id)
-                ->with('sender')
+                ->orWhere('sender_id', $user->id)
+                ->with(['sender', 'receiver'])
                 ->latest()
-                ->get();
+                ->get()
+                ->groupBy(function ($msg) use ($user) {
+                    return $msg->sender_id == $user->id ? $msg->receiver_id : $msg->sender_id;
+                });
 
         } elseif ($user->role == 'murid') {
             $data['gurus'] = User::where('role', 'guru')->get();
@@ -69,18 +65,14 @@ class DashboardController extends Controller
 
     public function sendMessage(Request $request)
     {
-        $request->validate([
-            'body' => 'required',
-            'receiver_id' => 'required',
-        ]);
-
+        $request->validate(['body' => 'required', 'receiver_id' => 'required']);
         Message::create([
             'sender_id' => auth()->id(),
             'receiver_id' => $request->receiver_id,
             'body' => $request->body,
         ]);
 
-        return back()->with('success', 'Pesan berhasil dikirim!');
+        return back()->with('success', 'Pesan terkirim!');
     }
 
     public function storeGuru(Request $request)
@@ -90,7 +82,6 @@ class DashboardController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|min:8',
         ]);
-
         User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -98,7 +89,7 @@ class DashboardController extends Controller
             'role' => 'guru',
         ]);
 
-        return back()->with('success', 'Guru baru berhasil ditambahkan!');
+        return back()->with('success', 'Guru berhasil didaftarkan!');
     }
 
     public function destroyGuru($id)
@@ -106,8 +97,10 @@ class DashboardController extends Controller
         $user = User::findOrFail($id);
         if (auth()->user()->role == 'admin' && $user->role == 'guru') {
             $user->delete();
-            return back()->with('success', 'Data guru berhasil dihapus!');
+
+            return back()->with('success', 'Guru dihapus.');
         }
+
         return back()->with('error', 'Akses ditolak.');
     }
 }

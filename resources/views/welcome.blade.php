@@ -1,51 +1,206 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wali - Chat Guru & Murid</title>
+    <title>Wali | Hubungkan Guru & Murid</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     <style>
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #224abe;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Hero Section Gradient */
+        .hero-area {
+            background: radial-gradient(circle at top right, rgba(78, 115, 223, 0.1), transparent),
+                        radial-gradient(circle at bottom left, rgba(28, 200, 138, 0.05), transparent);
+            padding: 120px 0 80px 0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .nav-link {
+            font-weight: 600;
+            color: #4a5568 !important;
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #1a202c 0%, #4e73df 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
-            padding: 100px 0;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 12px;
+            font-weight: 700;
+            box-shadow: 0 10px 20px rgba(78, 115, 223, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(78, 115, 223, 0.3);
+            color: white;
+        }
+
+        .feature-card {
+            border: none;
+            border-radius: 24px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.02);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .floating-blob {
+            position: absolute;
+            z-index: -1;
+            filter: blur(80px);
+            border-radius: 50%;
+            background: var(--primary-color);
+            opacity: 0.1;
         }
     </style>
 </head>
-
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="#">PROJECT WALI</a>
-            <div>
-                @if (Route::has('login'))
+            <a class="navbar-brand fw-extrabold text-primary d-flex align-items-center" href="#">
+                <i class="bi bi-chat-heart-fill me-2"></i> WALI.
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link px-3" href="#fitur">Fitur</a></li>
                     @auth
-                        <a href="{{ url('/dashboard') }}" class="btn btn-outline-primary">Dashboard</a>
+                        <li class="nav-item">
+                            <a class="btn btn-gradient ms-md-3" href="{{ url('/dashboard') }}">Masuk Dashboard</a>
+                        </li>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline-primary me-2">Login</a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="btn btn-primary">Daftar Siswa</a>
-                        @endif
+                        <li class="nav-item"><a class="nav-link px-3" href="{{ route('login') }}">Login</a></li>
+                        <li class="nav-item">
+                            <a class="btn btn-gradient ms-md-3" href="{{ route('register') }}">Daftar Murid</a>
+                        </li>
                     @endauth
-                @endif
+                </ul>
             </div>
         </div>
     </nav>
 
-    <header class="hero-section text-center">
+    <header class="hero-area position-relative overflow-hidden">
+        <div class="floating-blob" style="width: 400px; height: 400px; top: -100px; right: -100px;"></div>
+        <div class="floating-blob" style="width: 300px; height: 300px; bottom: -50px; left: -100px; background: #1cc88a;"></div>
+
         <div class="container">
-            <h1 class="display-4 fw-bold">Komunikasi Mudah dengan Guru Wali</h1>
-            <p class="lead">Tanya tugas, konsultasi, atau sekadar menyapa kini lebih mudah dan terpantau.</p>
-            <div class="mt-4">
-                <a href="{{ route('register') }}" class="btn btn-light btn-lg px-5">Mulai Sekarang</a>
+            <div class="row align-items-center min-vh-75">
+                <div class="col-lg-6">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-4 fw-bold">
+                         Solusi Chat Sekolah Modern
+                    </span>
+                    <h1 class="hero-title mb-4">Chat Guru Tanpa Ribet, Pantau Belajar Lebih Menyenangkan.</h1>
+                    <p class="lead text-muted mb-5" style="font-size: 1.2rem;">
+                        Aplikasi Wali menghubungkan murid dan guru wali dalam satu platform aman, transparan, dan mudah digunakan. 
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="{{ route('register') }}" class="btn btn-gradient btn-lg">Coba Sekarang — Gratis</a>
+                        <a href="#fitur" class="btn btn-outline-light border-0 text-dark fw-bold btn-lg">
+                            <i class="bi bi-play-circle me-2"></i>Lihat Fitur
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 d-none d-lg-block text-center">
+                    <img src="https://illustrations.popsy.co/white/studying.svg" alt="Illustration" class="img-fluid" style="max-height: 500px;">
+                </div>
             </div>
         </div>
     </header>
 
+    <section id="fitur" class="py-5">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="fw-bold">Kenapa Harus Menggunakan Wali?</h2>
+                    <p class="text-muted">Didesain khusus untuk mempermudah komunikasi akademik.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card h-100 text-center">
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary mx-auto">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <h5 class="fw-bold">Privasi Terjaga</h5>
+                        <p class="text-muted small">Chat aman antara guru dan murid tanpa perlu berbagi nomor telepon pribadi.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card h-100 text-center">
+                        <div class="icon-box bg-success bg-opacity-10 text-success mx-auto">
+                            <i class="bi bi-eye"></i>
+                        </div>
+                        <h5 class="fw-bold">Monitoring Admin</h5>
+                        <p class="text-muted small">Semua percakapan dipantau oleh admin sekolah demi menjaga etika dan keamanan.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card h-100 text-center">
+                        <div class="icon-box bg-info bg-opacity-10 text-info mx-auto">
+                            <i class="bi bi-phone"></i>
+                        </div>
+                        <h5 class="fw-bold">Akses Kapan Saja</h5>
+                        <p class="text-muted small">Tersedia dalam versi Web dan segera hadir dalam versi Mobile (Flutter).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-5 bg-white border-top">
+        <div class="container text-center">
+            <p class="text-muted mb-0 small">© 2026 Project Guru Wali - Dibuat oleh Brenda, Dirly, Tama</p>
+        </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
