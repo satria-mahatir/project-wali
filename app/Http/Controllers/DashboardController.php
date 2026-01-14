@@ -69,4 +69,17 @@ class DashboardController extends Controller
 
         return back()->with('success', 'Pesan berhasil dikirim!');
     }
+
+    public function destroy($id)
+{
+    $message = Message::findOrFail($id);
+    
+    // Opsional: Cek apakah yang hapus itu admin
+    if (auth()->user()->role !== 'admin') {
+        return back()->with('error', 'Hanya admin yang boleh hapus riwayat!');
+    }
+
+    $message->delete();
+    return back()->with('success', 'Pesan berhasil dihapus!');
+}
 }

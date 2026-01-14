@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -38,5 +39,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::post('/send-message', [DashboardController::class, 'sendMessage'])
     ->middleware(['auth'])
     ->name('chat.send');
-    
+
+Route::delete('/chat/{id}', [DashboardController::class, 'destroy'])->name('chat.destroy');
+
 require __DIR__.'/auth.php';
