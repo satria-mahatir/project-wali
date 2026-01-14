@@ -1,35 +1,43 @@
 <?php
 
-namespace App\Http\Controllers; // Ini harus Http\Controllers, bukan Models
+namespace App\Http\Controllers;
 
-use App\Models\Message; // Import model Message
-use App\Models\User;    // Import model User
+use App\Models\Message;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
-    {
-        $user = auth()->user();
-        $data = [];
+    public function index(Request $request)
+{
+    $user = auth()->user();
+    $data = [];
 
-        if ($user->role == 'admin') {
-            // Admin memantau semua pesan
-            $data['allMessages'] = Message::with(['sender', 'receiver'])->latest()->get();
-        } elseif ($user->role == 'guru') {
-            // Guru melihat pesan yang masuk ke dia
-            $data['messages'] = Message::where('receiver_id', $user->id)->with('sender')->latest()->get();
-        } else {
-            // Murid melihat daftar guru untuk dikirimi pesan
-            $data['gurus'] = User::where('role', 'guru')->get();
-            $data['myMessages'] = Message::where('sender_id', $user->id)
-                                        ->orWhere('receiver_id', $user->id)
-                                        ->with(['sender', 'receiver'])->latest()->get();
+    if ($user->role == 'admin') {
+        // Tambahkan fitur filter berdasarkan nama pengirim atau penerima
+        $query = Message::with(['sender', 'receiver']);
+        
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->whereHas('sender', function($q) use ($search) {
+                $q->where('name', 'like', "%$search%");
+            })->orWhereHas('receiver', function($q) use ($search) {
+                $q->where('name', 'like', "%$search%");
+            });
         }
 
-        return view('dashboard', $data);
+        $data['allMessages'] = $query->latest()->paginate(20); // Pake paginate biar gak berat
+    } elseif ($user->role == 'guru') {
+        $data['messages'] = Message::where('receiver_id', $user->id)->with('sender')->latest()->get();
+    } else {
+        $data['gurus'] = User::where('role', 'guru')->get();
+        $data['myMessages'] = Message::where('sender_id', $user->id)
+                                    ->orWhere('receiver_id', $user->id)
+                                    ->with(['sender', 'receiver'])->latest()->get();
     }
 
+    return view('dashboard', $data);
+}
     public function sendMessage(Request $request)
     {
         $request->validate([
