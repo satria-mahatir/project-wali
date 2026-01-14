@@ -43,4 +43,7 @@ Route::post('/send-message', [DashboardController::class, 'sendMessage'])
 Route::delete('/chat/{id}', [DashboardController::class, 'destroy'])->name('chat.destroy');
 
 Route::post('/admin/add-guru', [DashboardController::class, 'storeGuru'])->name('admin.storeGuru');
+
+Route::delete('/admin/guru/{id}', [DashboardController::class, 'destroyGuru'])->name('admin.destroyGuru');
+
 require __DIR__.'/auth.php';

@@ -12,7 +12,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Inisialisasi semua variabel sebagai koleksi kosong agar Blade tidak error
+        // Inisialisasi data kosong agar tidak error di Blade
         $data = [
             'allMessages' => collect(),
             'messages' => collect(),
@@ -21,28 +21,41 @@ class DashboardController extends Controller
         ];
 
         if ($user->role == 'admin') {
+            // Admin butuh daftar semua guru untuk statistik dan filter
+            $data['gurus'] = User::where('role', 'guru')->get();
+            
             $query = Message::with(['sender', 'receiver']);
 
-            if ($request->has('search')) {
-                $search = $request->search;
-                $query->whereHas('sender', function ($q) use ($search) {
-                    $q->where('name', 'like', "%$search%");
-                })->orWhereHas('receiver', function ($q) use ($search) {
-                    $q->where('name', 'like', "%$search%");
+            // FILTER: Berdasarkan Guru yang dipilih (Fitur Intip Chat)
+            if ($request->filled('guru_id')) {
+                $guruId = $request->guru_id;
+                $query->where(function ($q) use ($guruId) {
+                    $q->where('sender_id', $guruId)
+                      ->orWhere('receiver_id', $guruId);
                 });
             }
-            // Admin menggunakan paginate
+
+            // FILTER: Berdasarkan pencarian nama murid/guru
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('sender', function ($sq) use ($search) {
+                        $sq->where('name', 'like', "%$search%");
+                    })->orWhereHas('receiver', function ($rq) use ($search) {
+                        $rq->where('name', 'like', "%$search%");
+                    });
+                });
+            }
+
             $data['allMessages'] = $query->latest()->paginate(20);
 
         } elseif ($user->role == 'guru') {
-            // Guru mengambil pesan masuk
             $data['messages'] = Message::where('receiver_id', $user->id)
                 ->with('sender')
                 ->latest()
                 ->get();
 
         } elseif ($user->role == 'murid') {
-            // Murid mengambil daftar guru & riwayat chat
             $data['gurus'] = User::where('role', 'guru')->get();
             $data['myMessages'] = Message::where('sender_id', $user->id)
                 ->orWhere('receiver_id', $user->id)
@@ -70,22 +83,6 @@ class DashboardController extends Controller
         return back()->with('success', 'Pesan berhasil dikirim!');
     }
 
-    public function destroy($id)
-    {
-        $message = Message::findOrFail($id);
-
-        // Opsional: Cek apakah yang hapus itu admin
-        if (auth()->user()->role !== 'admin') {
-            return back()->with('error', 'Hanya admin yang boleh hapus riwayat!');
-        }
-
-        $message->delete();
-
-        return back()->with('success', 'Pesan berhasil dihapus!');
-    }
-
-    // Tambahkan di dalam class DashboardController
-
     public function storeGuru(Request $request)
     {
         $request->validate([
@@ -94,13 +91,23 @@ class DashboardController extends Controller
             'password' => 'required|min:8',
         ]);
 
-        \App\Models\User::create([
+        User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'role' => 'guru', // Langsung set jadi guru
+            'role' => 'guru',
         ]);
 
         return back()->with('success', 'Guru baru berhasil ditambahkan!');
+    }
+
+    public function destroyGuru($id)
+    {
+        $user = User::findOrFail($id);
+        if (auth()->user()->role == 'admin' && $user->role == 'guru') {
+            $user->delete();
+            return back()->with('success', 'Data guru berhasil dihapus!');
+        }
+        return back()->with('error', 'Akses ditolak.');
     }
 }
