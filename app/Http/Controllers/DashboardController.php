@@ -9,35 +9,51 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     public function index(Request $request)
-{
-    $user = auth()->user();
-    $data = [];
-
-    if ($user->role == 'admin') {
-        // Tambahkan fitur filter berdasarkan nama pengirim atau penerima
-        $query = Message::with(['sender', 'receiver']);
+    {
+        $user = auth()->user();
         
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->whereHas('sender', function($q) use ($search) {
-                $q->where('name', 'like', "%$search%");
-            })->orWhereHas('receiver', function($q) use ($search) {
-                $q->where('name', 'like', "%$search%");
-            });
+        // Inisialisasi semua variabel sebagai koleksi kosong agar Blade tidak error
+        $data = [
+            'allMessages' => collect(),
+            'messages'    => collect(),
+            'myMessages'  => collect(),
+            'gurus'       => collect(),
+        ];
+
+        if ($user->role == 'admin') {
+            $query = Message::with(['sender', 'receiver']);
+            
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->whereHas('sender', function($q) use ($search) {
+                    $q->where('name', 'like', "%$search%");
+                })->orWhereHas('receiver', function($q) use ($search) {
+                    $q->where('name', 'like', "%$search%");
+                });
+            }
+            // Admin menggunakan paginate
+            $data['allMessages'] = $query->latest()->paginate(20);
+
+        } elseif ($user->role == 'guru') {
+            // Guru mengambil pesan masuk
+            $data['messages'] = Message::where('receiver_id', $user->id)
+                                ->with('sender')
+                                ->latest()
+                                ->get();
+
+        } elseif ($user->role == 'murid') {
+            // Murid mengambil daftar guru & riwayat chat
+            $data['gurus'] = User::where('role', 'guru')->get();
+            $data['myMessages'] = Message::where('sender_id', $user->id)
+                                ->orWhere('receiver_id', $user->id)
+                                ->with(['sender', 'receiver'])
+                                ->latest()
+                                ->get();
         }
 
-        $data['allMessages'] = $query->latest()->paginate(20); // Pake paginate biar gak berat
-    } elseif ($user->role == 'guru') {
-        $data['messages'] = Message::where('receiver_id', $user->id)->with('sender')->latest()->get();
-    } else {
-        $data['gurus'] = User::where('role', 'guru')->get();
-        $data['myMessages'] = Message::where('sender_id', $user->id)
-                                    ->orWhere('receiver_id', $user->id)
-                                    ->with(['sender', 'receiver'])->latest()->get();
+        return view('dashboard', $data);
     }
 
-    return view('dashboard', $data);
-}
     public function sendMessage(Request $request)
     {
         $request->validate([
