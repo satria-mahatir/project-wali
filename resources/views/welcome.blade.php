@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -24,14 +24,13 @@
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        /* Hero Section Adjustments */
         .hero-area {
             background: radial-gradient(circle at top right, rgba(78, 115, 223, 0.1), transparent),
                 radial-gradient(circle at bottom left, rgba(28, 200, 138, 0.05), transparent);
-            /* Padding atas dikurangi agar konten naik ke atas */
-            padding: 80px 0 40px 0;
+            padding: 98px 0 60px 0;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -41,15 +40,18 @@
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.8) !important;
             padding: 12px 0;
+            transition: background 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .navbar {
+            background: rgba(33, 37, 41, 0.8) !important;
         }
 
         .nav-link {
             font-weight: 600;
-            color: #4a5568 !important;
         }
 
         .hero-title {
-            /* Ukuran font disesuaikan agar tidak terlalu memakan ruang vertical */
             font-size: 3.5rem;
             font-weight: 800;
             line-height: 1.2;
@@ -59,9 +61,14 @@
             margin-bottom: 20px;
         }
 
+        [data-bs-theme="dark"] .hero-title {
+            background: linear-gradient(135deg, #ffffff 0%, #4e73df 100%);
+            -webkit-background-clip: text;
+        }
+
         .btn-gradient {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
+            color: white !important;
             border: none;
             padding: 14px 30px;
             border-radius: 12px;
@@ -73,11 +80,10 @@
         .btn-gradient:hover {
             transform: translateY(-3px);
             box-shadow: 0 15px 30px rgba(78, 115, 223, 0.3);
-            color: white;
         }
 
         section {
-            scroll-margin-top: 75px;
+            scroll-margin-top: 80px;
         }
 
         #fitur {
@@ -89,13 +95,13 @@
             border-radius: 24px;
             padding: 30px;
             transition: all 0.3s ease;
-            background: white;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.02);
+            background: var(--bs-body-bg);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
         }
 
         .feature-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
         }
 
         .icon-box {
@@ -117,6 +123,31 @@
             background: var(--primary-color);
             opacity: 0.1;
         }
+
+        #themeToggle {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--bs-nav-link-color);
+        }
+
+        [data-bs-theme="dark"] .text-muted {
+            color: #94a3b8 !important;
+        }
+
+        [data-bs-theme="dark"] #fitur h2, 
+        [data-bs-theme="dark"] .feature-card h5 {
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .btn-outline-dark {
+            color: #ffffff !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        [data-bs-theme="dark"] .btn-outline-dark:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: #ffffff !important;
+        }
     </style>
 </head>
 
@@ -133,6 +164,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item"><a class="nav-link px-3" href="#fitur">Fitur</a></li>
+
+                    <li class="nav-item px-2">
+                        <div id="themeToggle" title="Ganti Mode">
+                            <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                        </div>
+                    </li>
+
                     @auth
                         <li class="nav-item">
                             <a class="btn btn-gradient ms-md-3" href="{{ url('/dashboard') }}">Masuk Dashboard</a>
@@ -156,7 +194,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 mt-3 fw-bold">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 fw-bold">
                         Solusi Chat Sekolah Modern
                     </span>
                     <h1 class="hero-title">Chat Guru Tanpa Ribet, Pantau Belajar Lebih Menyenangkan.</h1>
@@ -167,8 +205,8 @@
                     <div class="d-flex gap-3">
                         <a href="{{ route('register') }}" class="btn btn-gradient btn-lg text-nowrap">Coba Sekarang —
                             Gratis</a>
-                        <a href="#fitur"
-                            class="btn btn-outline-dark border-2 fw-bold btn-lg d-flex align-items-center">
+                        <a href="#fitur" class="btn btn-outline-dark border-2 fw-bold btn-lg d-flex align-items-center"
+                            id="btnFitur">
                             <i class="bi bi-play-circle me-2"></i>Fitur
                         </a>
                     </div>
@@ -224,13 +262,40 @@
         </div>
     </section>
 
-    <footer class="py-5 bg-white border-top">
+    <footer class="py-5 bg-body-tertiary border-top">
         <div class="container text-center">
             <p class="text-muted mb-0 small">© 2026 Project Guru Wali - Dibuat oleh Tama</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+
+        function setTheme(theme) {
+            html.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+
+            if (theme === 'dark') {
+                themeIcon.classList.replace('bi-moon-stars-fill', 'bi-sun-fill');
+                document.documentElement.classList.add('dark');
+            } else {
+                themeIcon.classList.replace('bi-sun-fill', 'bi-moon-stars-fill');
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        setTheme(currentTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const newTheme = html.getAttribute('data-bs-theme') === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        });
+    </script>
 </body>
 
 </html>
