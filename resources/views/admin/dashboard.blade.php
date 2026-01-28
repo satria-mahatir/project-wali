@@ -161,7 +161,7 @@
     @if($selectedGuru)
         <div class="row mt-4 animate__animated animate__fadeInUp">
             <div class="col-12">
-                <div class="card border-0 shadow-lg rounded-xl overflow-hidden border-top border-primary border-4">
+                <div class="card shadow-lg rounded-xl overflow-hidden border-top border-primary" style="border-width: 0; border-top-width: 4px;">
                     <div class="card-header bg-white p-4 d-flex justify-content-between align-items-center border-0">
                         <div>
                             <h5 class="fw-bold mb-0 text-dark text-bold">Log Komunikasi: {{ $selectedGuru->name }}</h5>
