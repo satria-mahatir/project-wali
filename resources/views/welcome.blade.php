@@ -134,7 +134,7 @@
             color: #94a3b8 !important;
         }
 
-        [data-bs-theme="dark"] #fitur h2, 
+        [data-bs-theme="dark"] #fitur h2,
         [data-bs-theme="dark"] .feature-card h5 {
             color: #ffffff !important;
         }

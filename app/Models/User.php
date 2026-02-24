@@ -18,11 +18,11 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'role', 
-];
+        'name',
+        'email',
+        'password',
+        'role', //
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -43,4 +43,20 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Relasi untuk menghitung pesan yang diterima (untuk dashboard Admin)
+     */
+    public function receivedMessages()
+    {
+        return $this->hasMany(Message::class, 'receiver_id');
+    }
+
+    /**
+     * Relasi untuk pesan yang dikirim (opsional, buat jaga-jaga)
+     */
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
 }

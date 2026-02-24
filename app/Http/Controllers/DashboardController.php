@@ -5,92 +5,141 @@ namespace App\Http\Controllers;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
         $user = auth()->user();
-        
-        // Inisialisasi data default agar tidak ada variabel yang undefined
         $data = [
+            'stats' => $this->getAdminStats(),
+            'display_data' => collect(),
             'allMessages' => collect(),
+            'selectedGuru' => null,
             'gurus' => collect(),
-            'murids' => collect(), // Harus ada di sini
+            'myMessages' => collect(),
             'perlu_balas' => collect(),
             'sudah_balas' => collect(),
-            'myMessages' => collect(),
-            'selectedGuru' => null,
-            'stats' => [],
         ];
 
-        // LOGIKA ADMIN (Dashboard Utama)
         if ($user->role == 'admin') {
-            $data['stats'] = $this->getAdminStats();
-            
-            // Selalu tarik data guru dan murid untuk dashboard admin
             $data['gurus'] = User::where('role', 'guru')->get();
-            $data['murids'] = User::where('role', 'murid')->latest()->get();
+            $data['murids'] = User::where('role', 'murid')->get();
 
-            // Logika khusus "Intip Surat" Guru
+            if ($request->view == 'guru') {
+                $data['display_data'] = $data['gurus'];
+            } elseif ($request->view == 'murid') {
+                $data['display_data'] = $data['murids'];
+            } elseif ($request->view == 'surat') {
+                $data['display_data'] = User::where('role', 'guru')->withCount(['receivedMessages as total_pesan'])->get();
+            }
+
             if ($request->filled('view_guru')) {
                 $data['selectedGuru'] = User::find($request->view_guru);
                 $guruId = $request->view_guru;
                 $data['allMessages'] = Message::with(['sender', 'receiver'])
                     ->where(function ($q) use ($guruId) {
                         $q->where('sender_id', $guruId)->orWhere('receiver_id', $guruId);
-                    })->latest()->paginate(15);
+                    })->latest()->get()
+                    ->groupBy(fn ($msg) => $msg->sender_id == $guruId ? $msg->receiver_id : $msg->sender_id);
             }
 
             return view('admin.dashboard', $data);
 
-        // LOGIKA GURU
         } elseif ($user->role == 'guru') {
-            $allMessages = Message::where('receiver_id', $user->id)
-                ->orWhere('sender_id', $user->id)
-                ->with(['sender', 'receiver'])
-                ->latest()->get();
-
-            $grouped = $allMessages->groupBy(function ($msg) use ($user) {
-                return $msg->sender_id == $user->id ? $msg->receiver_id : $msg->sender_id;
-            });
-
+            $allMessages = Message::where('receiver_id', $user->id)->orWhere('sender_id', $user->id)->latest()->get();
+            $grouped = $allMessages->groupBy(fn ($msg) => $msg->sender_id == $user->id ? $msg->receiver_id : $msg->sender_id);
             $data['perlu_balas'] = $grouped->filter(fn ($chats) => $chats->first()->sender_id != $user->id);
             $data['sudah_balas'] = $grouped->filter(fn ($chats) => $chats->first()->sender_id == $user->id);
 
-        // LOGIKA MURID
-        } elseif ($user->role == 'murid') {
-            $guruQuery = User::where('role', 'guru');
-            if ($request->filled('search_guru')) {
-                $guruQuery->where('name', 'like', '%'.$request->search_guru.'%');
-            }
-            $data['gurus'] = $guruQuery->get();
-            $data['myMessages'] = Message::where('sender_id', $user->id)
-                ->orWhere('receiver_id', $user->id)
-                ->with(['sender', 'receiver'])
-                ->latest()->get();
-        }
+            return view('dashboard', $data);
 
-        return view('dashboard', $data);
+        } else { // Murid
+            $data['gurus'] = User::where('role', 'guru')->get();
+            $data['myMessages'] = Message::where('sender_id', $user->id)->orWhere('receiver_id', $user->id)->latest()->get();
+
+            return view('dashboard', $data);
+        }
     }
 
-    // HALAMAN KHUSUS DATA GURU (Admin Only)
+    // --- FITUR PROFIL ADMIN ---
+    public function profile()
+    {
+        // Panggil stats admin biar di sidebar atau widget profil datanya akurat
+        return view('admin.profile', ['stats' => $this->getAdminStats()]);
+    }
+
+    public function profileUpdate(Request $request)
+    {
+        $user = auth()->user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$user->id,
+            'password' => 'nullable|min:8|confirmed',
+        ]);
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return redirect()->back()->with('success', 'Profil berhasil diperbarui!');
+    }
+
+    // --- FITUR CHAT ---
+    public function sendMessage(Request $request)
+    {
+        $request->validate(['receiver_id' => 'required', 'subject' => 'required', 'body' => 'required']);
+        Message::create([
+            'sender_id' => auth()->id(),
+            'receiver_id' => $request->receiver_id,
+            'subject' => $request->subject,
+            'body' => $request->body,
+        ]);
+
+        return redirect()->back()->with('success', 'Pesan terkirim!');
+    }
+
+    public function destroy($id)
+    {
+        Message::where(function ($q) use ($id) {
+            $q->where('id', $id)->where('sender_id', auth()->id());
+        })->delete();
+
+        return redirect()->back()->with('success', 'Pesan dihapus.');
+    }
+
+    // --- MANAJEMEN GURU (ADMIN) ---
     public function indexGuru()
     {
         if (auth()->user()->role != 'admin') {
             return abort(403);
         }
 
-        $data = [
-            'stats' => $this->getAdminStats(),
-            'gurus' => User::where('role', 'guru')->latest()->get(),
-            'murids' => collect(), // Tambahkan koleksi kosong biar file layout admin gak error
-        ];
-
-        return view('admin.guru', $data);
+        return view('admin.guru', ['gurus' => User::where('role', 'guru')->latest()->get(), 'stats' => $this->getAdminStats()]);
     }
 
-    // Helper untuk ambil statistik
+    public function storeGuru(Request $request)
+    {
+        $request->validate(['name' => 'required', 'email' => 'required|unique:users', 'password' => 'required|min:8']);
+        User::create(['name' => $request->name, 'email' => $request->email, 'password' => Hash::make($request->password), 'role' => 'guru']);
+
+        return redirect()->back()->with('success', 'Guru berhasil ditambahkan!');
+    }
+
+    public function destroyGuru($id)
+    {
+        User::findOrFail($id)->delete();
+
+        return redirect()->back()->with('success', 'Guru berhasil dihapus.');
+    }
+
     private function getAdminStats()
     {
         return [
@@ -98,53 +147,5 @@ class DashboardController extends Controller
             'total_murid' => User::where('role', 'murid')->count(),
             'total_surat' => Message::count(),
         ];
-    }
-
-    public function sendMessage(Request $request)
-    {
-        $request->validate([
-            'subject' => 'nullable|string|max:150',
-            'body' => 'required',
-            'receiver_id' => 'required',
-        ]);
-
-        Message::create([
-            'sender_id' => auth()->id(),
-            'receiver_id' => $request->receiver_id,
-            'subject' => $request->subject ?? 'Lanjutan Pesan',
-            'body' => $request->body,
-        ]);
-
-        return back()->with('success', 'Pesan berhasil dikirim!');
-    }
-
-    public function storeGuru(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-        ]);
-
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'role' => 'guru',
-        ]);
-
-        return back()->with('success', 'Guru baru berhasil didaftarkan!');
-    }
-
-    public function destroyGuru($id)
-    {
-        $user = User::findOrFail($id);
-        
-        if ($user->role !== 'guru') {
-            return back()->with('error', 'Hanya akun guru yang bisa dihapus lewat sini.');
-        }
-
-        $user->delete();
-        return back()->with('success', 'Data guru telah dihapus dari sistem.');
     }
 }
