@@ -20,8 +20,10 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'username', // PENTING: Jangan dihapus, ini buat nyimpen NISN
         'password',
-        'role', //
+        'role', 
+        'guru_id',  // Ini buat nyimpen data guru walinya
     ];
 
     /**
@@ -58,5 +60,25 @@ class User extends Authenticatable
     public function sentMessages()
     {
         return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    // ==========================================
+    // TAMBAHAN RELASI GURU WALI & ANAK ASUH
+    // ==========================================
+
+    /**
+     * Relasi: Murid punya satu Guru Wali
+     */
+    public function guruWali()
+    {
+        return $this->belongsTo(User::class, 'guru_id');
+    }
+
+    /**
+     * Relasi: Guru punya banyak anak asuh (murid)
+     */
+    public function anakAsuh()
+    {
+        return $this->hasMany(User::class, 'guru_id');
     }
 }
